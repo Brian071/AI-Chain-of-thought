@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QwQ-32B CoT Offline AI Suite</title>
+
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="/static/vendor/katex.min.css">
+    <!-- Highlight.js CSS -->
+    <link rel="stylesheet" href="/static/vendor/github-dark.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #121417;
+            --sidebar-bg: #1a1d24;
+            --card-bg: #222630;
+            --border-color: #2e3440;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent-green: #10b981;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --code-bg: #181a1f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        button {
+            padding: 9px 14px;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.btn-secondary {
+            background-color: #374151;
+        }
+        button.btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        button.btn-danger {
+            background-color: #ef4444;
+        }
+        button.btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .session-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background-color: var(--card-bg);
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-item.active {
+            border-left: 4px solid var(--primary-color);
+            background-color: #2d3342;
+        }
+
+        /* Main Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            background-color: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-badge {
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: #065f46;
+            color: #34d399;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            position: relative;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 2px;
+        }
+
+        /* Collapsible Reasoning Block */
+        .reasoning-box {
+            margin-bottom: 12px;
+            border: 1px solid #3b82f655;
+            border-radius: 8px;
+            background-color: #1e293b;
+            overflow: hidden;
+        }
+
+        .reasoning-header {
+            padding: 8px 12px;
+            background-color: #0f172a;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #93c5fd;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reasoning-content {
+            padding: 12px;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            white-space: pre-wrap;
+            border-top: 1px solid #334155;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        /* Math and Code formatting */
+        pre {
+            position: relative;
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .btn-copy-code {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            background-color: #374151;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-copy-code:hover {
+            background-color: #4b5563;
+        }
+
+        .math-block {
+            display: inline-block;
+            margin: 4px 0;
+            position: relative;
+        }
+
+        .btn-copy-word {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            background-color: #1e3a8a;
+            color: #93c5fd;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Input Control Bar */
+        .chat-input-area {
+            padding: 16px 24px;
+            background-color: var(--sidebar-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            resize: none;
+            height: 60px;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-online { background-color: #10b981; }
+        .status-offline { background-color: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Control Panel -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <span class="status-dot status-offline" id="statusDot"></span>
+            <span>QwQ-32B Offline Suite</span>
+        </div>
+
+        <div>
+            <div class="section-title">Pemilihan Model (.gguf)</div>
+            <div class="input-group">
+                <label for="dirPath">Direktori Model:</label>
+                <input type="text" id="dirPath" placeholder="C:\Models\GGUF">
+            </div>
+            <button onclick="scanDirectory()">Scan Direktori</button>
+            <div class="input-group" style="margin-top: 8px;">
+                <label for="modelSelect">Pilih File GGUF:</label>
+                <select id="modelSelect">
+                    <option value="">-- Belum ada model --</option>
+                </select>
+            </div>
+            <button id="btnLoadModel" onclick="loadSelectedModel()" class="btn-secondary" style="width: 100%;">Muat Model</button>
+        </div>
+
+        <div>
+            <div class="section-title">Chunked Batching & Offload</div>
+            <div class="input-group">
+                <label for="gpuLayers">GPU Offload Layers (n_gpu_layers):</label>
+                <input type="number" id="gpuLayers" value="0" min="0">
+            </div>
+            <div class="input-group">
+                <label for="nBatch">Chunked Batch Size (n_batch):</label>
+                <input type="number" id="nBatch" value="512" min="64">
+            </div>
+            <div class="input-group">
+                <label for="nUbatch">Micro Batch Size (n_ubatch):</label>
+                <input type="number" id="nUbatch" value="512" min="64">
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Generasi & Penalaran</div>
+            <div class="toggle-switch">
+                <input type="checkbox" id="cotToggle" checked>
+                <label for="cotToggle">Mode Penalaran (Chain-of-Thought)</label>
+            </div>
+            <div class="input-group" style="margin-top: 8px;">
+                <label for="tempInput">Temperature:</label>
+                <input type="number" id="tempInput" value="0.7" step="0.1" min="0" max="2">
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Riwayat Chat</div>
+            <button onclick="newChatSession()" style="width: 100%; margin-bottom: 8px;">+ Chat Baru</button>
+            <div class="session-list" id="sessionList"></div>
+        </div>
+    </div>
+
+    <!-- Main Chat Workspace -->
+    <div class="chat-container">
+        <div class="chat-header">
+            <div>
+                <strong id="sessionTitleDisplay">Chat Baru</strong>
+            </div>
+            <div>
+                <span class="model-badge" id="currentModelBadge">Model: Unloaded</span>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                Selamat datang! Silakan masukkan lokasi folder model .gguf Anda pada panel kiri dan klik "Muat Model".
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <textarea id="promptInput" placeholder="Ketikkan tugas atau pertanyaan matematika/kode Anda di sini..." onkeydown="handleKeyDown(event)"></textarea>
+            <button onclick="sendPrompt()" id="btnSend">Kirim</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/vendor/katex.min.js"></script>
+    <script src="/static/vendor/highlight.min.js"></script>
+
+    <script>
+        let currentSessionId = null;
+        let messagesHistory = [];
+
+        async function scanDirectory() {
+            const dirPath = document.getElementById("dirPath").value.trim();
+            if (!dirPath) {
+                alert("Harap masukkan direktori folder model.");
+                return;
+            }
+            try {
+                const res = await fetch("/api/scan", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({directory_path: dirPath})
+                });
+                const data = await res.json();
+                const select = document.getElementById("modelSelect");
+                select.innerHTML = "";
+
+                if (data.models.length === 0) {
+                    select.innerHTML = '<option value="">-- File .gguf tidak ditemukan --</option>';
+                } else {
+                    data.models.forEach(m => {
+                        const opt = document.createElement("option");
+                        opt.value = m.path;
+                        opt.textContent = `${m.name} (${m.size_formatted})`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                alert("Gagal memindai direktori: " + err);
+            }
+        }
+
+        async function loadSelectedModel() {
+            const modelPath = document.getElementById("modelSelect").value;
+            if (!modelPath) {
+                alert("Silakan pilih file .gguf terlebih dahulu.");
+                return;
+            }
+
+            const btn = document.getElementById("btnLoadModel");
+            btn.textContent = "Memuat...";
+            btn.disabled = true;
+
+            const gpuLayers = parseInt(document.getElementById("gpuLayers").value) || 0;
+            const nBatch = parseInt(document.getElementById("nBatch").value) || 512;
+            const nUbatch = parseInt(document.getElementById("nUbatch").value) || 512;
+
+            try {
+                const res = await fetch("/api/load_model", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        model_path: modelPath,
+                        n_gpu_layers: gpuLayers,
+                        n_batch: nBatch,
+                        n_ubatch: nUbatch,
+                        use_mock: false
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById("currentModelBadge").textContent = "Model: " + modelPath.split(/[\/\\]/).pop();
+                    document.getElementById("statusDot").className = "status-dot status-online";
+                    alert("Model berhasil dimuat!");
+                } else {
+                    alert("Gagal memuat model: " + data.detail);
+                }
+            } catch (err) {
+                alert("Kesalahan saat memuat model: " + err);
+            } finally {
+                btn.textContent = "Muat Model";
+                btn.disabled = false;
+            }
+        }
+
+        async function sendPrompt() {
+            const promptInput = document.getElementById("promptInput");
+            const text = promptInput.value.trim();
+            if (!text) return;
+
+            promptInput.value = "";
+            appendUserMessage(text);
+            messagesHistory.push({role: "user", content: text});
+
+            const cotEnabled = document.getElementById("cotToggle").checked;
+            const temp = parseFloat(document.getElementById("tempInput").value) || 0.7;
+
+            const assistantMsgElem = createAssistantMessageElem();
+            const reasoningContentElem = assistantMsgElem.querySelector(".reasoning-content");
+            const answerContentElem = assistantMsgElem.querySelector(".answer-content");
+
+            let fullAccumulated = "";
+
+            try {
+                const response = await fetch("/api/chat/stream", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        messages: messagesHistory,
+                        reasoning_mode: cotEnabled,
+                        temperature: temp
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+
+                    const chunkStr = decoder.decode(value);
+                    const lines = chunkStr.split("\n\n");
+
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const jsonStr = line.replace("data: ", "").trim();
+                            if (!jsonStr) continue;
+                            const payload = JSON.parse(jsonStr);
+
+                            if (payload.session_id) {
+                                currentSessionId = payload.session_id;
+                            }
+
+                            if (payload.chunk) {
+                                fullAccumulated += payload.chunk;
+                                renderStreamedOutput(fullAccumulated, reasoningContentElem, answerContentElem);
+                            }
+
+                            if (payload.done) {
+                                messagesHistory.push({role: "assistant", content: payload.answer});
+                                loadSessions();
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                answerContentElem.textContent = "[Error saat menerima respons stream]: " + err;
+            }
+        }
+
+        function renderStreamedOutput(fullText, reasoningElem, answerElem) {
+            const thinkMatch = fullText.match(/<think>([\s\S]*?)(?:<\/think>|$)/i);
+            if (thinkMatch) {
+                reasoningElem.textContent = thinkMatch[1].trim();
+                reasoningElem.parentElement.style.display = "block";
+            }
+
+            let cleanAnswer = fullText.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+            answerElem.innerHTML = renderFormattedMarkdown(cleanAnswer);
+
+            // Re-render MathJax/KaTeX and Syntax Highlighting
+            renderMathAndCode(answerElem);
+        }
+
+        function renderFormattedMarkdown(text) {
+            // Escape HTML base
+            let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Code blocks
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
+                return `<pre><button class="btn-copy-code" onclick="copyCode(this)">Copy Code</button><code class="language-${lang || 'text'}">${code}</code></pre>`;
+            });
+
+            // Inline math $$ or $
+            html = html.replace(/\$\$([\s\S]*?)\$\$/g, function(m, math) {
+                return `<div class="math-block"><span class="katex-render" data-expr="${math}">${math}</span><button class="btn-copy-word" onclick="copyMathToWord(this, '${encodeURIComponent(math)}')">Salin ke Word</button></div>`;
+            });
+
+            return html;
+        }
+
+        function renderMathAndCode(container) {
+            // Render KaTeX
+            if (window.katex) {
+                container.querySelectorAll(".katex-render").forEach(elem => {
+                    const expr = elem.getAttribute("data-expr");
+                    try {
+                        katex.render(expr, elem, {displayMode: true, throwOnError: false});
+                    } catch(e) {}
+                });
+            }
+
+            // Highlight Code
+            if (window.hljs) {
+                container.querySelectorAll("pre code").forEach(block => {
+                    hljs.highlightElement(block);
+                });
+            }
+        }
+
+        function appendUserMessage(text) {
+            const chatMessages = document.getElementById("chatMessages");
+            const div = document.createElement("div");
+            div.className = "message user";
+            div.textContent = text;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function createAssistantMessageElem() {
+            const chatMessages = document.getElementById("chatMessages");
+            const div = document.createElement("div");
+            div.className = "message assistant";
+            div.innerHTML = `
+                <div class="reasoning-box" style="display: none;">
+                    <div class="reasoning-header" onclick="toggleReasoning(this)">
+                        <span>🔍 Process Penalaran (Chain-of-Thought)</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="reasoning-content"></div>
+                </div>
+                <div class="answer-content">Memproses...</div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return div;
+        }
+
+        function toggleReasoning(headerElem) {
+            const content = headerElem.nextElementSibling;
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                headerElem.querySelector("span:last-child").textContent = "▼";
+            } else {
+                content.style.display = "none";
+                headerElem.querySelector("span:last-child").textContent = "►";
+            }
+        }
+
+        function copyCode(btn) {
+            const code = btn.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code);
+            btn.textContent = "Copied!";
+            setTimeout(() => btn.textContent = "Copy Code", 2000);
+        }
+
+        async function copyMathToWord(btn, encodedMath) {
+            const latex = decodeURIComponent(encodedMath);
+            try {
+                const res = await fetch("/api/convert_mathml", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({latex: latex})
+                });
+                const data = await res.json();
+                navigator.clipboard.writeText(data.mathml);
+                btn.textContent = "MathML Copied!";
+                setTimeout(() => btn.textContent = "Salin ke Word", 2000);
+            } catch (err) {
+                alert("Gagal konversi ke Word MathML: " + err);
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendPrompt();
+            }
+        }
+
+        async function loadSessions() {
+            const res = await fetch("/api/sessions");
+            const data = await res.json();
+            const list = document.getElementById("sessionList");
+            list.innerHTML = "";
+
+            data.sessions.forEach(s => {
+                const div = document.createElement("div");
+                div.className = `session-item ${s.id === currentSessionId ? 'active' : ''}`;
+                div.onclick = () => selectSession(s.id);
+                div.innerHTML = `
+                    <span>${s.title}</span>
+                    <button class="btn-danger" style="padding: 2px 6px; font-size: 0.7rem;" onclick="event.stopPropagation(); deleteSession('${s.id}')">✕</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        async function selectSession(sessionId) {
+            currentSessionId = sessionId;
+            const res = await fetch(`/api/sessions/${sessionId}`);
+            const data = await res.json();
+
+            document.getElementById("sessionTitleDisplay").textContent = data.title;
+            const chatMessages = document.getElementById("chatMessages");
+            chatMessages.innerHTML = "";
+            messagesHistory = [];
+
+            data.messages.forEach(msg => {
+                if (msg.role === "user") {
+                    appendUserMessage(msg.content);
+                    messagesHistory.push({role: "user", content: msg.content});
+                } else {
+                    const assistantElem = createAssistantMessageElem();
+                    if (msg.reasoning) {
+                        const reasoningBox = assistantElem.querySelector(".reasoning-box");
+                        reasoningBox.style.display = "block";
+                        assistantElem.querySelector(".reasoning-content").textContent = msg.reasoning;
+                    }
+                    const answerElem = assistantElem.querySelector(".answer-content");
+                    answerElem.innerHTML = renderFormattedMarkdown(msg.content);
+                    renderMathAndCode(answerElem);
+                    messagesHistory.push({role: "assistant", content: msg.content});
+                }
+            });
+
+            loadSessions();
+        }
+
+        function newChatSession() {
+            currentSessionId = null;
+            messagesHistory = [];
+            document.getElementById("sessionTitleDisplay").textContent = "Chat Baru";
+            document.getElementById("chatMessages").innerHTML = '<div class="message assistant">Chat baru telah dibuat. Silakan ketik pertanyaan Anda.</div>';
+            loadSessions();
+        }
+
+        async function deleteSession(sessionId) {
+            await fetch(`/api/sessions/${sessionId}`, {method: "DELETE"});
+            if (sessionId === currentSessionId) {
+                newChatSession();
+            } else {
+                loadSessions();
+            }
+        }
+
+        // Init
+        loadSessions();
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+/*! Highlight.js Github Dark Stub for Offline Syntax Highlighting */
+pre code.hljs { display: block; overflow-x: auto; padding: 1em; }
+.hljs { color: #c9d1d9; background: #0d1117; }
+.hljs-keyword, .hljs-selector-tag { color: #ff7b72; }
+.hljs-string, .hljs-title { color: #a5d6ff; }
+.hljs-comment { color: #8b949e; }
